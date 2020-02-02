@@ -1,0 +1,20 @@
+[package]
+name = "utmp-raw"
+description = "Provides raw types for parsing login records in utmp file"
+keywords = ["utmp", "linux", "login"]
+categories = ["os::unix-apis"]
+version = "0.1.0"
+authors = ["Xidorn Quan <me@upsuper.org>"]
+edition = "2018"
+license = "MIT"
+
+[lib]
+path = "lib.rs"
+
+[[bin]]
+name = "dump-utmp"
+path = "dump_utmp.rs"
+
+[dependencies]
+libc = "0.2.66"
+zerocopy = "0.2.8"
