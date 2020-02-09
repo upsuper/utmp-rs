@@ -3,7 +3,7 @@ name = "utmp-raw"
 description = "Provides raw types for parsing login records in utmp file"
 keywords = ["utmp", "linux", "login"]
 categories = ["os::unix-apis"]
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Xidorn Quan <me@upsuper.org>"]
 edition = "2018"
 license = "MIT"
@@ -11,7 +11,7 @@ license = "MIT"
 [lib]
 path = "lib.rs"
 
-[[bin]]
+[[example]]
 name = "dump-utmp"
 path = "dump_utmp.rs"
 
