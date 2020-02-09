@@ -12,14 +12,17 @@ const UTMP_SIZE: usize = std::mem::size_of::<utmp>();
 #[repr(align(4))]
 struct UtmpBuffer([u8; UTMP_SIZE]);
 
+/// Parse utmp entries from the given path.
 pub fn parse_from_path<P: AsRef<Path>>(path: P) -> Result<Vec<UtmpEntry>, ParseError> {
     parse_from_file(File::open(path)?)
 }
 
+/// Parse utmp entries from the given file.
 pub fn parse_from_file(file: File) -> Result<Vec<UtmpEntry>, ParseError> {
     parse_from_reader(BufReader::new(file))
 }
 
+/// Parse utmp entries from the given reader.
 pub fn parse_from_reader<R: Read>(mut reader: R) -> Result<Vec<UtmpEntry>, ParseError> {
     let mut result = Vec::new();
     let mut buffer = UtmpBuffer([0; UTMP_SIZE]);

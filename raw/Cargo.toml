@@ -3,8 +3,9 @@ name = "utmp-raw"
 description = "Provides raw types for parsing login records in utmp file"
 keywords = ["utmp", "linux", "login"]
 categories = ["os::unix-apis"]
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Xidorn Quan <me@upsuper.org>"]
+repository = "https://github.com/upsuper/utmp-rs"
 edition = "2018"
 license = "MIT"
 
