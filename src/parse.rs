@@ -27,8 +27,8 @@ pub fn parse_from_reader<R: Read>(mut reader: R) -> Result<Vec<UtmpEntry>, Parse
     let mut result = Vec::new();
     let mut buffer = UtmpBuffer([0; UTMP_SIZE]);
     'outer: loop {
+        let mut buf = buffer.0.as_mut();
         loop {
-            let mut buf = buffer.0.as_mut();
             match reader.read(buf) {
                 // If the buffer has not been filled, then we just passed the last item.
                 Ok(0) if buf.len() == UTMP_SIZE => break 'outer,
