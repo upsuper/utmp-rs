@@ -3,7 +3,7 @@ name = "utmp-raw"
 description = "Provides raw types for parsing login records in utmp file"
 keywords = ["utmp", "linux", "login"]
 categories = ["os::unix-apis"]
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Xidorn Quan <me@upsuper.org>"]
 repository = "https://github.com/upsuper/utmp-rs"
 edition = "2018"
@@ -18,4 +18,4 @@ path = "dump_utmp.rs"
 
 [dependencies]
 libc = "0.2.66"
-zerocopy = "0.2.8"
+zerocopy = "0.6"

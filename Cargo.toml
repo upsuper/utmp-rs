@@ -13,9 +13,9 @@ license = "MIT"
 [dependencies]
 chrono = "0.4.10"
 libc = "0.2.66"
-utmp-raw = { version = "0.1.2", path = "raw" }
+utmp-raw = { version = "0.2.0", path = "raw" }
 thiserror = "1.0.10"
-zerocopy = "0.2.8"
+zerocopy = "0.6"
 
 [workspace]
 members = ["raw"]
