@@ -13,10 +13,12 @@ pub enum UtmpEntry {
     Empty,
     /// Change in system run-level (see `init(8)`)
     RunLevel {
+        pid: pid_t,
         /// Kernel version
         kernel_version: String,
         /// Time entry was made
         time: DateTime<Utc>,
+        user: String,
     },
     /// Time of system boot
     BootTime(DateTime<Utc>),
@@ -72,8 +74,10 @@ impl<'a> TryFrom<&'a utmp> for UtmpEntry {
         Ok(match from.ut_type {
             utmp_raw::EMPTY => UtmpEntry::Empty,
             utmp_raw::RUN_LVL => UtmpEntry::RunLevel {
+                pid: from.ut_pid,
                 kernel_version: string_from_bytes(&from.ut_host).map_err(UtmpError::InvalidHost)?,
                 time: time_from_tv(from.ut_tv)?,
+                user: string_from_bytes(&from.ut_user).map_err(UtmpError::InvalidUser)?,
             },
             utmp_raw::BOOT_TIME => UtmpEntry::BootTime(time_from_tv(from.ut_tv)?),
             utmp_raw::NEW_TIME => UtmpEntry::NewTime(time_from_tv(from.ut_tv)?),
