@@ -71,6 +71,8 @@ pub enum UtmpEntry {
     DeadProcess {
         /// PID of the terminated process
         pid: pid_t,
+        /// Device name of tty
+        line: String,
         /// Time entry was made
         time: OffsetDateTime,
     },
@@ -125,6 +127,7 @@ impl<'a> TryFrom<&'a utmp> for UtmpEntry {
             },
             utmp_raw::DEAD_PROCESS => UtmpEntry::DeadProcess {
                 pid: from.ut_pid,
+                line: string_from_bytes(&from.ut_line).map_err(UtmpError::InvalidLine)?,
                 time: time_from_tv(from.ut_tv)?,
             },
             utmp_raw::ACCOUNTING => UtmpEntry::Accounting,
