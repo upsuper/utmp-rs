@@ -11,7 +11,7 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
-chrono = "0.4.10"
+time = "0.3"
 libc = "0.2.66"
 utmp-raw = { version = "0.2.0", path = "raw" }
 thiserror = "1.0.10"

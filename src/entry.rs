@@ -1,9 +1,9 @@
-use chrono::{DateTime, TimeZone, Utc};
 use libc::pid_t;
 use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::os::raw::c_short;
 use thiserror::Error;
+use time::OffsetDateTime;
 use utmp_raw::{timeval, utmp};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -16,39 +16,39 @@ pub enum UtmpEntry {
         /// Kernel version
         kernel_version: String,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Time of system boot
     BootTime {
         /// Kernel version
         kernel_version: String,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Time of system shutdown
     ShutdownTime {
         /// Kernel version
         kernel_version: String,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Time after system clock change
-    NewTime(DateTime<Utc>),
+    NewTime(OffsetDateTime),
     /// Time before system clock change
-    OldTime(DateTime<Utc>),
+    OldTime(OffsetDateTime),
     /// Process spawned by `init(8)`
     InitProcess {
         /// PID of the init process
         pid: pid_t,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Session leader process for user login
     LoginProcess {
         /// PID of the login process
         pid: pid_t,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Normal process
     UserProcess {
@@ -63,7 +63,7 @@ pub enum UtmpEntry {
         /// Session ID (`getsid(2)`)
         session: pid_t,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
         // TODO: Figure out the correct byte order to parse the address
         // address: IpAddr,
     },
@@ -72,7 +72,7 @@ pub enum UtmpEntry {
         /// PID of the terminated process
         pid: pid_t,
         /// Time entry was made
-        time: DateTime<Utc>,
+        time: OffsetDateTime,
     },
     /// Not implemented
     #[non_exhaustive]
@@ -148,12 +148,13 @@ pub enum UtmpError {
     InvalidHost(Box<[u8]>),
 }
 
-fn time_from_tv(tv: timeval) -> Result<DateTime<Utc>, UtmpError> {
+fn time_from_tv(tv: timeval) -> Result<OffsetDateTime, UtmpError> {
     let timeval { tv_sec, tv_usec } = tv;
-    match tv_usec {
-        usec if usec < 0 => Err(UtmpError::InvalidTime(tv)),
-        usec => Ok(Utc.timestamp(i64::from(tv_sec), usec as u32 * 1000)),
+    if tv_usec < 0 {
+        return Err(UtmpError::InvalidTime(tv));
     }
+    let usec = i128::from(tv_sec) * 1_000_000 + i128::from(tv_usec);
+    OffsetDateTime::from_unix_timestamp_nanos(usec * 1000).map_err(|_| UtmpError::InvalidTime(tv))
 }
 
 fn string_from_bytes(bytes: &[u8]) -> Result<String, Box<[u8]>> {
