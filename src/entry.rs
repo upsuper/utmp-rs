@@ -19,7 +19,19 @@ pub enum UtmpEntry {
         time: DateTime<Utc>,
     },
     /// Time of system boot
-    BootTime(DateTime<Utc>),
+    BootTime {
+        /// Kernel version
+        kernel_version: String,
+        /// Time entry was made
+        time: DateTime<Utc>,
+    },
+    /// Time of system shutdown
+    ShutdownTime {
+        /// Kernel version
+        kernel_version: String,
+        /// Time entry was made
+        time: DateTime<Utc>,
+    },
     /// Time after system clock change
     NewTime(DateTime<Utc>),
     /// Time before system clock change
@@ -59,6 +71,8 @@ pub enum UtmpEntry {
     DeadProcess {
         /// PID of the terminated process
         pid: pid_t,
+        /// Time entry was made
+        time: DateTime<Utc>,
     },
     /// Not implemented
     #[non_exhaustive]
@@ -71,11 +85,26 @@ impl<'a> TryFrom<&'a utmp> for UtmpEntry {
     fn try_from(from: &utmp) -> Result<Self, UtmpError> {
         Ok(match from.ut_type {
             utmp_raw::EMPTY => UtmpEntry::Empty,
-            utmp_raw::RUN_LVL => UtmpEntry::RunLevel {
+            utmp_raw::RUN_LVL => {
+                let kernel_version =
+                    string_from_bytes(&from.ut_host).map_err(UtmpError::InvalidHost)?;
+                let time = time_from_tv(from.ut_tv)?;
+                if from.ut_line[0] == b'~' && from.ut_user.starts_with(b"shutdown\0") {
+                    UtmpEntry::ShutdownTime {
+                        kernel_version,
+                        time,
+                    }
+                } else {
+                    UtmpEntry::RunLevel {
+                        kernel_version,
+                        time,
+                    }
+                }
+            }
+            utmp_raw::BOOT_TIME => UtmpEntry::BootTime {
                 kernel_version: string_from_bytes(&from.ut_host).map_err(UtmpError::InvalidHost)?,
                 time: time_from_tv(from.ut_tv)?,
             },
-            utmp_raw::BOOT_TIME => UtmpEntry::BootTime(time_from_tv(from.ut_tv)?),
             utmp_raw::NEW_TIME => UtmpEntry::NewTime(time_from_tv(from.ut_tv)?),
             utmp_raw::OLD_TIME => UtmpEntry::OldTime(time_from_tv(from.ut_tv)?),
             utmp_raw::INIT_PROCESS => UtmpEntry::InitProcess {
@@ -94,7 +123,10 @@ impl<'a> TryFrom<&'a utmp> for UtmpEntry {
                 session: from.ut_session,
                 time: time_from_tv(from.ut_tv)?,
             },
-            utmp_raw::DEAD_PROCESS => UtmpEntry::DeadProcess { pid: from.ut_pid },
+            utmp_raw::DEAD_PROCESS => UtmpEntry::DeadProcess {
+                pid: from.ut_pid,
+                time: time_from_tv(from.ut_tv)?,
+            },
             utmp_raw::ACCOUNTING => UtmpEntry::Accounting,
             _ => return Err(UtmpError::UnknownType(from.ut_type)),
         })
