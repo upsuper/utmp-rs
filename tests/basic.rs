@@ -5,8 +5,7 @@ use std::io::{self, BufReader, Read};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use time::OffsetDateTime;
-use utmp_raw::{x32::utmp as utmp32, x64::utmp as utmp64};
-use utmp_rs::{parse_from_path, UtmpEntry, UtmpParser};
+use utmp_rs::{parse_from_path, Utmp32Parser, Utmp64Parser, UtmpEntry};
 
 static SAMPLES_PATH: Lazy<PathBuf> =
     Lazy::new(|| PathBuf::from_iter(&[env!("CARGO_MANIFEST_DIR"), "tests", "samples"]));
@@ -68,7 +67,7 @@ fn get_basic64_expected() -> Vec<UtmpEntry> {
 #[test]
 fn parse_basic32() -> Result<()> {
     let path = SAMPLES_PATH.join("basic32.utmp");
-    let actual = UtmpParser::<_, utmp32>::from_path(&path)?.collect::<Result<Vec<_>, _>>()?;
+    let actual = Utmp32Parser::from_path(&path)?.collect::<Result<Vec<_>, _>>()?;
     let expected = get_basic32_expected();
     Ok(assert_eq!(actual, expected))
 }
@@ -76,7 +75,7 @@ fn parse_basic32() -> Result<()> {
 #[test]
 fn parse_basic64() -> Result<()> {
     let path = SAMPLES_PATH.join("basic64.utmp");
-    let actual = UtmpParser::<_, utmp64>::from_path(&path)?.collect::<Result<Vec<_>, _>>()?;
+    let actual = Utmp64Parser::from_path(&path)?.collect::<Result<Vec<_>, _>>()?;
     let expected = get_basic64_expected();
     Ok(assert_eq!(actual, expected))
 }
@@ -93,7 +92,7 @@ fn parse_empty() -> Result<()> {
 fn parse_with_partial_read() -> Result<()> {
     let path = SAMPLES_PATH.join("basic32.utmp");
     let reader = ByteReader(BufReader::new(File::open(&path)?));
-    let actual = UtmpParser::<_, utmp32>::from_reader(reader).collect::<Result<Vec<_>, _>>()?;
+    let actual = Utmp32Parser::from_reader(reader).collect::<Result<Vec<_>, _>>()?;
     let expected = get_basic32_expected();
     Ok(assert_eq!(actual, expected))
 }

@@ -9,24 +9,12 @@ use thiserror::Error;
 use utmp_raw::{utmp, x32::utmp as utmp32, x64::utmp as utmp64};
 use zerocopy::{FromBytes, LayoutVerified};
 
-/// Parser to parse a utmp file. It can be used as an iterator.
-///
-/// ```
-/// use utmp_raw::utmp;
-/// # use utmp_rs::UtmpParser;
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// for entry in UtmpParser::<_, utmp>::from_path("/var/run/utmp")? {
-///     let entry = entry?;
-///     // handle entry
-/// }
-/// # Ok(())
-/// # }
-/// ```
-pub struct UtmpParser<R, T = utmp>(R, PhantomData<T>);
+#[doc(hidden)]
+pub struct UtmpParserImpl<R, T = utmp>(R, PhantomData<T>);
 
-impl<R: Read, T> UtmpParser<R, T> {
+impl<R: Read, T> UtmpParserImpl<R, T> {
     pub fn from_reader(reader: R) -> Self {
-        UtmpParser(reader, PhantomData)
+        UtmpParserImpl(reader, PhantomData)
     }
 
     pub fn into_inner(self) -> R {
@@ -34,9 +22,9 @@ impl<R: Read, T> UtmpParser<R, T> {
     }
 }
 
-impl<T> UtmpParser<BufReader<File>, T> {
+impl<T> UtmpParserImpl<BufReader<File>, T> {
     pub fn from_file(file: File) -> Self {
-        UtmpParser(BufReader::new(file), PhantomData)
+        UtmpParserImpl(BufReader::new(file), PhantomData)
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, io::Error> {
@@ -44,10 +32,26 @@ impl<T> UtmpParser<BufReader<File>, T> {
     }
 }
 
+/// Parser to parse a utmp file. It can be used as an iterator.
+///
+/// ```
+/// # use utmp_rs::UtmpParser;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// for entry in UtmpParser::from_path("/var/run/utmp")? {
+///     let entry = entry?;
+///     // handle entry
+/// }
+/// # Ok(())
+/// # }
+/// ```
+pub type UtmpParser<R> = UtmpParserImpl<R, utmp>;
+pub type Utmp32Parser<R> = UtmpParserImpl<R, utmp32>;
+pub type Utmp64Parser<R> = UtmpParserImpl<R, utmp64>;
+
 const UTMP32_SIZE: usize = mem::size_of::<utmp32>();
 const UTMP64_SIZE: usize = mem::size_of::<utmp64>();
 
-impl<R: Read> Iterator for UtmpParser<R, utmp32> {
+impl<R: Read> Iterator for UtmpParserImpl<R, utmp32> {
     type Item = Result<UtmpEntry, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -62,7 +66,7 @@ impl<R: Read> Iterator for UtmpParser<R, utmp32> {
     }
 }
 
-impl<R: Read> Iterator for UtmpParser<R, utmp64> {
+impl<R: Read> Iterator for UtmpParserImpl<R, utmp64> {
     type Item = Result<UtmpEntry, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -111,21 +115,21 @@ fn read_entry<R: Read, T: FromBytes>(
 ///
 /// It parses the given path using the native utmp format in the target platform.
 pub fn parse_from_path<P: AsRef<Path>>(path: P) -> Result<Vec<UtmpEntry>, ParseError> {
-    UtmpParser::<_, utmp>::from_path(path)?.collect()
+    UtmpParser::from_path(path)?.collect()
 }
 
 /// Parse utmp entries from the given file.
 ///
 /// It parses the given file using the native utmp format in the target platform.
 pub fn parse_from_file(file: File) -> Result<Vec<UtmpEntry>, ParseError> {
-    UtmpParser::<_, utmp>::from_file(file).collect()
+    UtmpParser::from_file(file).collect()
 }
 
 /// Parse utmp entries from the given reader.
 ///
 /// It parses from the given reader using the native utmp format in the target platform.
 pub fn parse_from_reader<R: Read>(reader: R) -> Result<Vec<UtmpEntry>, ParseError> {
-    UtmpParser::<_, utmp>::from_reader(reader).collect()
+    UtmpParser::from_reader(reader).collect()
 }
 
 #[derive(Debug, Error)]
