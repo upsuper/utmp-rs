@@ -1,9 +1,12 @@
 #![allow(non_camel_case_types)]
 
+use cfg_if::cfg_if;
 use std::ffi::CStr;
-use std::fmt;
 use std::os::raw::c_short;
 use zerocopy::FromBytes;
+
+pub mod x32;
+pub mod x64;
 
 /// Record does not contain valid info (formerly known as `UT_UNKNOWN` on Linux)
 pub const EMPTY: c_short = 0;
@@ -40,57 +43,28 @@ pub struct exit_status {
     pub e_exit: c_short,
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug, FromBytes)]
-pub struct timeval {
-    /// Seconds
-    pub tv_sec: i32,
-    /// Microseconds
-    pub tv_usec: i32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, FromBytes)]
-pub struct utmp {
-    /// Type of record
-    pub ut_type: c_short,
-    /// PID of login process
-    pub ut_pid: libc::pid_t,
-    /// Device name of tty - `"/dev/"`
-    pub ut_line: [u8; UT_LINESIZE],
-    /// Terminal name suffix, or `inittab(5)` ID
-    pub ut_id: [u8; 4],
-    /// Username
-    pub ut_user: [u8; UT_NAMESIZE],
-    /// Hostname for remote login, or kernel version for run-level message
-    pub ut_host: [u8; UT_HOSTSIZE],
-    /// Exit status of a process marked as `DEAD_PROCESS`; not used by Linux init
-    pub ut_exit: exit_status,
-    /// Session ID (`getsid(2)`) used for windowing
-    pub ut_session: i32,
-    /// Time entry was made
-    pub ut_tv: timeval,
-    /// Internet address of remote host; IPv4 address uses just `ut_addr_v6[0]`
-    pub ut_addr_v6: [i32; 4],
-    /// Reserved for future use
-    pub __unused: [u8; 20],
-}
-
-impl fmt::Debug for utmp {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.debug_struct("utmp")
-            .field("ut_type", &self.ut_type)
-            .field("ut_pid", &self.ut_pid)
-            .field("ut_line", &cstr_from_bytes(&self.ut_line))
-            .field("ut_id", &self.ut_id)
-            .field("ut_user", &cstr_from_bytes(&self.ut_user))
-            .field("ut_host", &cstr_from_bytes(&self.ut_host))
-            .field("ut_exit", &self.ut_exit)
-            .field("ut_session", &self.ut_session)
-            .field("ut_tv", &self.ut_tv)
-            .field("ut_addr_v6", &self.ut_addr_v6)
-            .field("__unused", &self.__unused)
-            .finish()
+cfg_if! {
+    if #[cfg(any(
+        target_arch = "x86",
+        target_arch = "x86_64",
+        target_arch = "arm",
+        target_arch = "mips",
+        target_arch = "mips64",
+        target_arch = "powerpc",
+        target_arch = "powerpc64",
+        target_arch = "riscv32",
+        target_arch = "riscv64",
+        target_arch = "sparc",
+        target_arch = "sparc64",
+    ))] {
+        pub use x32::*;
+    } else if #[cfg(any(
+        target_arch = "aarch64",
+        target_arch = "s390x",
+    ))] {
+        pub use x64::*;
+    } else {
+        compile_error!("The target platform is not supported, please help us add it.");
     }
 }
 
@@ -100,16 +74,5 @@ fn cstr_from_bytes(bytes: &[u8]) -> &CStr {
         Some(pos) => unsafe { CStr::from_bytes_with_nul_unchecked(&bytes[..=pos]) },
         // This is safe because we manually generated this string.
         None => unsafe { CStr::from_bytes_with_nul_unchecked("???\0".as_bytes()) },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::mem;
-
-    #[test]
-    fn test_size_of() {
-        assert_eq!(mem::size_of::<utmp>(), 384);
     }
 }

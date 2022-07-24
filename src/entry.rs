@@ -4,7 +4,8 @@ use std::ffi::CStr;
 use std::os::raw::c_short;
 use thiserror::Error;
 use time::OffsetDateTime;
-use utmp_raw::{timeval, utmp};
+use utmp_raw::x32::utmp as utmp32;
+use utmp_raw::x64::{timeval as timeval64, utmp as utmp64};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -81,10 +82,33 @@ pub enum UtmpEntry {
     Accounting,
 }
 
-impl<'a> TryFrom<&'a utmp> for UtmpEntry {
+impl<'a> TryFrom<&'a utmp32> for UtmpEntry {
     type Error = UtmpError;
 
-    fn try_from(from: &utmp) -> Result<Self, UtmpError> {
+    fn try_from(from: &utmp32) -> Result<Self, UtmpError> {
+        UtmpEntry::try_from(&utmp64 {
+            ut_type: from.ut_type,
+            ut_pid: from.ut_pid,
+            ut_line: from.ut_line,
+            ut_id: from.ut_id,
+            ut_user: from.ut_user,
+            ut_host: from.ut_host,
+            ut_exit: from.ut_exit,
+            ut_session: i64::from(from.ut_session),
+            ut_tv: timeval64 {
+                tv_sec: i64::from(from.ut_tv.tv_sec),
+                tv_usec: i64::from(from.ut_tv.tv_usec),
+            },
+            ut_addr_v6: from.ut_addr_v6,
+            __unused: from.__unused,
+        })
+    }
+}
+
+impl<'a> TryFrom<&'a utmp64> for UtmpEntry {
+    type Error = UtmpError;
+
+    fn try_from(from: &utmp64) -> Result<Self, UtmpError> {
         Ok(match from.ut_type {
             utmp_raw::EMPTY => UtmpEntry::Empty,
             utmp_raw::RUN_LVL => {
@@ -122,7 +146,7 @@ impl<'a> TryFrom<&'a utmp> for UtmpEntry {
                 line: string_from_bytes(&from.ut_line).map_err(UtmpError::InvalidLine)?,
                 user: string_from_bytes(&from.ut_user).map_err(UtmpError::InvalidUser)?,
                 host: string_from_bytes(&from.ut_host).map_err(UtmpError::InvalidHost)?,
-                session: from.ut_session,
+                session: from.ut_session as pid_t,
                 time: time_from_tv(from.ut_tv)?,
             },
             utmp_raw::DEAD_PROCESS => UtmpEntry::DeadProcess {
@@ -142,7 +166,7 @@ pub enum UtmpError {
     #[error("unknown type {0}")]
     UnknownType(c_short),
     #[error("invalid time value {0:?}")]
-    InvalidTime(timeval),
+    InvalidTime(timeval64),
     #[error("invalid line value `{0:?}`")]
     InvalidLine(Box<[u8]>),
     #[error("invalid user value `{0:?}`")]
@@ -151,8 +175,8 @@ pub enum UtmpError {
     InvalidHost(Box<[u8]>),
 }
 
-fn time_from_tv(tv: timeval) -> Result<OffsetDateTime, UtmpError> {
-    let timeval { tv_sec, tv_usec } = tv;
+fn time_from_tv(tv: timeval64) -> Result<OffsetDateTime, UtmpError> {
+    let timeval64 { tv_sec, tv_usec } = tv;
     if tv_usec < 0 {
         return Err(UtmpError::InvalidTime(tv));
     }

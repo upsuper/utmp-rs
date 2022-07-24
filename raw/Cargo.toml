@@ -17,5 +17,6 @@ name = "dump-utmp"
 path = "dump_utmp.rs"
 
 [dependencies]
+cfg-if = "1.0.0"
 libc = "0.2.66"
 zerocopy = "0.6"
