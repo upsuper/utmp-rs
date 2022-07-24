@@ -3,7 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/utmp-rs.svg)](https://crates.io/crates/utmp-rs)
 [![Docs](https://docs.rs/utmp-rs/badge.svg)](https://docs.rs/utmp-rs)
 
-Rust crate for parsing `utmp` files like `/var/run/utmp` and `/var/log/wtmp`.
+<!-- cargo-sync-readme start -->
+
+A Rust crate for parsing `utmp` files like `/var/run/utmp` and `/var/log/wtmp`.
 
 ## Usage
 
@@ -13,3 +15,5 @@ fn main() -> Result<()> {
     // ...
 }
 ```
+
+<!-- cargo-sync-readme end -->
