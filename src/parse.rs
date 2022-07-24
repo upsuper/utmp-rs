@@ -45,7 +45,11 @@ impl<T> UtmpParserImpl<BufReader<File>, T> {
 /// # }
 /// ```
 pub type UtmpParser<R> = UtmpParserImpl<R, utmp>;
+
+/// Parser to parse a 32-bit utmp file.
 pub type Utmp32Parser<R> = UtmpParserImpl<R, utmp32>;
+
+/// Parser to parse a 64-bit utmp file.
 pub type Utmp64Parser<R> = UtmpParserImpl<R, utmp64>;
 
 const UTMP32_SIZE: usize = mem::size_of::<utmp32>();

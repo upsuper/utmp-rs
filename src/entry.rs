@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 use utmp_raw::x32::utmp as utmp32;
 use utmp_raw::x64::{timeval as timeval64, utmp as utmp64};
 
+/// Parsed utmp entry.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum UtmpEntry {
