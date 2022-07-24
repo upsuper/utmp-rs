@@ -3,7 +3,7 @@ name = "utmp-rs"
 description = "Parsing utmp file"
 keywords = ["utmp", "linux", "login"]
 categories = ["os::unix-apis"]
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Xidorn Quan <me@upsuper.org>"]
 repository = "https://github.com/upsuper/utmp-rs"
 readme = "README.md"
@@ -13,7 +13,7 @@ license = "MIT"
 [dependencies]
 time = "0.3"
 libc = "0.2.66"
-utmp-raw = { version = "0.2.0", path = "raw" }
+utmp-raw = { version = "0.3.0", path = "raw" }
 thiserror = "1.0.10"
 zerocopy = "0.6"
 
