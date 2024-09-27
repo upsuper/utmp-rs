@@ -15,6 +15,8 @@ pub enum UtmpEntry {
     Empty,
     /// Change in system run-level (see `init(8)`)
     RunLevel {
+        /// PID of the init process
+        pid: pid_t,
         /// Kernel version
         kernel_version: String,
         /// Time entry was made
@@ -49,6 +51,12 @@ pub enum UtmpEntry {
     LoginProcess {
         /// PID of the login process
         pid: pid_t,
+        /// Device name of tty
+        line: String,
+        /// Username
+        user: String,
+        /// Hostname for remote login
+        host: String,
         /// Time entry was made
         time: OffsetDateTime,
     },
@@ -123,6 +131,7 @@ impl<'a> TryFrom<&'a utmp64> for UtmpEntry {
                     }
                 } else {
                     UtmpEntry::RunLevel {
+                        pid: from.ut_pid,
                         kernel_version,
                         time,
                     }
@@ -141,6 +150,9 @@ impl<'a> TryFrom<&'a utmp64> for UtmpEntry {
             utmp_raw::LOGIN_PROCESS => UtmpEntry::LoginProcess {
                 pid: from.ut_pid,
                 time: time_from_tv(from.ut_tv)?,
+                line: string_from_bytes(&from.ut_line).map_err(UtmpError::InvalidLine)?,
+                user: string_from_bytes(&from.ut_user).map_err(UtmpError::InvalidUser)?,
+                host: string_from_bytes(&from.ut_host).map_err(UtmpError::InvalidHost)?,
             },
             utmp_raw::USER_PROCESS => UtmpEntry::UserProcess {
                 pid: from.ut_pid,
@@ -194,5 +206,6 @@ fn string_from_bytes(bytes: &[u8]) -> Result<String, Box<[u8]>> {
             let cstr = unsafe { CStr::from_bytes_with_nul_unchecked(&bytes[..=pos]) };
             Some(cstr.to_str().ok()?.to_string())
         })
+        .or_else(|| std::str::from_utf8(bytes).map(|v| v.to_string()).ok())
         .ok_or_else(|| bytes.to_owned().into_boxed_slice())
 }
