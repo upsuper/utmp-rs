@@ -202,5 +202,7 @@ fn string_from_bytes(bytes: &[u8]) -> Result<String, Box<[u8]>> {
         Some(pos) => &bytes[..pos],
         None => bytes,
     };
-    str::from_utf8(trimmed).map(|s| s.into()).map_err(|_| bytes.into())
+    str::from_utf8(trimmed)
+        .map(|s| s.into())
+        .map_err(|_| bytes.into())
 }
