@@ -1,10 +1,10 @@
 use super::{cstr_from_bytes, exit_status, UT_HOSTSIZE, UT_LINESIZE, UT_NAMESIZE};
 use libc::c_short;
 use std::fmt;
-use zerocopy::FromBytes;
+use zerocopy::{FromBytes, FromZeroes};
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, FromBytes)]
+#[derive(Clone, Copy, Debug, FromBytes, FromZeroes)]
 pub struct timeval {
     /// Seconds
     pub tv_sec: i32,
@@ -13,7 +13,7 @@ pub struct timeval {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, FromBytes)]
+#[derive(Clone, Copy, FromBytes, FromZeroes)]
 pub struct utmp {
     /// Type of record
     pub ut_type: c_short,
