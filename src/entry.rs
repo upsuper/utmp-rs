@@ -1,7 +1,7 @@
 use libc::pid_t;
 use std::convert::TryFrom;
-use std::ffi::CStr;
 use std::os::raw::c_short;
+use std::str;
 use thiserror::Error;
 use time::OffsetDateTime;
 use utmp_raw::x32::utmp as utmp32;
@@ -198,14 +198,9 @@ fn time_from_tv(tv: timeval64) -> Result<OffsetDateTime, UtmpError> {
 }
 
 fn string_from_bytes(bytes: &[u8]) -> Result<String, Box<[u8]>> {
-    bytes
-        .iter()
-        .position(|b| *b == 0)
-        .and_then(|pos| {
-            // This is safe because we manually located the first zero byte above.
-            let cstr = unsafe { CStr::from_bytes_with_nul_unchecked(&bytes[..=pos]) };
-            Some(cstr.to_str().ok()?.to_string())
-        })
-        .or_else(|| std::str::from_utf8(bytes).map(|v| v.to_string()).ok())
-        .ok_or_else(|| bytes.to_owned().into_boxed_slice())
+    let trimmed = match bytes.iter().position(|b| *b == 0) {
+        Some(pos) => &bytes[..pos],
+        None => bytes,
+    };
+    str::from_utf8(trimmed).map(|s| s.into()).map_err(|_| bytes.into())
 }
